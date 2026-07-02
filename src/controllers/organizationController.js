@@ -10,7 +10,6 @@ const ApiError = require(
   "../utils/ApiError"
 );
 
-
 exports.createOrganization =
   asyncHandler(async (req, res) => {
     const { name, description } = req.body;
@@ -54,10 +53,11 @@ exports.getOrganizations =
     });
   });
 
-const User = require("../models/User");
-
 exports.inviteMember =
   asyncHandler(async (req, res) => {
+
+    console.log("req.body", req);
+
     const { email, role } = req.body;
 
     const organization = req.organization;

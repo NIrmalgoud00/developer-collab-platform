@@ -6,7 +6,7 @@ const protect = require(
     "../middleware/authMiddleware"
 );
 
-const authorizeOrganizationRole = require("../middleware/organizationRoleMiddleware")
+const authorizeOrganizationRole = require("../middleware/authorizeOrganizationRole")
 
 const {
     createOrganization,
@@ -23,7 +23,7 @@ organizationRoutes.get(
 );
 
 organizationRoutes.post(
-    "/:id/projects",
+    "/:id/invite",
     protect,
     authorizeOrganizationRole("org_admin"),
     inviteMember

@@ -1,31 +1,26 @@
-const Organization = require(
-    "../models/Organization"
-);
-
 const ApiError = require(
     "../utils/ApiError"
 );
 
-const authorizeOrganizationRole =
+const getOrganizationById = require(
+    "../services/organizationService"
+);
+
+const getProjectById = require(
+    "../services/projectService"
+);
+
+const authorizeProjectRole =
     (...allowedRoles) => {
         return async (
             req,
             res,
             next
         ) => {
-            const organization =
-                await Organization.findById(
-                    req.params.id
-                );
 
-            if (!organization) {
-                return next(
-                    new ApiError(
-                        404,
-                        "Organization not found"
-                    )
-                );
-            }
+            const project = await getProjectById(req.params.id);
+
+            const organization = await getOrganizationById(project.organization);
 
             const member =
                 organization.members.find(
@@ -51,7 +46,7 @@ const authorizeOrganizationRole =
                 return next(
                     new ApiError(
                         403,
-                        "Insufficient permissions"
+                        "Access denied"
                     )
                 );
             }
@@ -66,4 +61,4 @@ const authorizeOrganizationRole =
         };
     };
 
-module.exports = authorizeOrganizationRole;
+module.exports = authorizeProjectRole;
