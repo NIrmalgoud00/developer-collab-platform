@@ -43,6 +43,11 @@ const organizationSchema = new mongoose.Schema(
         },
 
         members: [memberSchema],
+
+        archived: {
+            type: Boolean,
+            default: false
+        }
     },
     {
         timestamps: true,

@@ -12,7 +12,13 @@ const getTaskById = require("../services/taskService");
 
 const getUserById = require("../services/userService");
 
+const createActivity = require("../services/activityService");
+
+const { ACTIVITY_ACTIONS } = require("../constants/activityActions");
+
 const Task = require("../models/Task");
+const Activity = require("../models/Activity");
+const { baseGetActivities } = require("../services/baseGetActivities");
 
 exports.createTask =
     asyncHandler(async (req, res) => {
@@ -42,9 +48,14 @@ exports.createTask =
                 position,
             });
 
+        await createActivity.logTaskCreated(
+            task,
+            req.user._id,
+        );
+
         const populatedTask =
             await getTaskById(
-                req.task._id,
+                task._id,
                 [
                     {
                         path: "organization",
@@ -149,25 +160,52 @@ exports.getTask =
 exports.updateTask =
     asyncHandler(async (req, res) => {
 
+        const task = req.task;
+        const metadata = {};
+
+        Object.keys(req.body).forEach((key) => {
+            if (task[key] !== req.body[key]) {
+                metadata[key] = {
+                    oldValue: task[key],
+                    newValue: req.body[key]
+                };
+            }
+        });
+
         Object.assign(
-            req.task,
+            task,
             req.body
         ); // Object.assign(terget, source) copy all properties from the source object into the target object.
 
-        await req.task.save();
+        await task.save();
+
+        await createActivity.logTaskUpdated(
+            task,
+            req.user._id,
+            metadata
+        );
 
         res.status(200).json({
             success: true,
-            task: req.task
+            message: "Task update successfully",
+            task
         });
 
     })
 
 exports.deleteTask =
     asyncHandler(async (req, res) => {
-        req.task.archived = true;
 
-        await req.task.save(); // save/change in mongoose memory then mongoose check with DB document if not same or capture updates so update in DB
+        const task = req.task;
+
+        task.archived = true;
+
+        await task.save(); // save/change in mongoose memory then mongoose check with DB document if not same or capture updates so update in DB
+
+        await createActivity.logTaskDeleted(
+            task,
+            req.user._id
+        );
 
         res.status(200).json({
             success: true,
@@ -177,6 +215,8 @@ exports.deleteTask =
 
 exports.assignTask =
     asyncHandler(async (req, res) => {
+
+        const task = req.task;
 
         const user = await getUserById(req.body.userId);
 
@@ -188,52 +228,99 @@ exports.assignTask =
             );
 
         if (!member) {
-            return next(
-                new ApiError(
-                    403,
-                    "User is not a member of this organization"
-                )
-            );
+            new ApiError(
+                403,
+                "User is not a member of this organization"
+            )
         }
 
-        req.task.assignee = user._id;
-        await req.task.save();
+        const previousAssignee = task.assignee;
+
+        task.assignee = user._id;
+        await task.save();
+
+        await createActivity.logTaskAssigned(
+            task,
+            req.user._id,
+            user.name,
+            previousAssignee // optional
+        );
 
         res.status(200).json({
             success: true,
             message: "User assign successfully",
-            task: req.task,
+            task,
         });
 
     })
-
-// Business Rules
-//       Task must exist
-//       User must exist
-//       User must belong to the same organization
-//       Only org_admin and project_manager can assign tasks
-//       Assigned user can be changed
-//       Save activity log (later)
 
 exports.moveTask =
     asyncHandler(async (req, res) => {
 
         const { status, position } = req.body;
 
-        req.task.status = status;
-        req.task.position = position;
-        await req.task.save();
+        const task = req.task;
+
+        const metadata = {
+            status: {
+                oldValue: task.status,
+                newvalue: status
+            },
+            position: {
+                oldValue: task.position,
+                newvalue: position
+            }
+        }
+
+        task.status = status;
+        task.position = position;
+        await task.save();
+
+        await createActivity.logTaskMoved(
+            task,
+            req.user._id,
+            metadata
+        );
 
         res.status(200).json({
             success: true,
-            task: req.task,
+            task
         });
 
     })
 
-// Business Rules
-//      Status must be valid
-//      Position must be valid
-//      Update ordering
-//      Save activity
-//      Send notification (later)
+// GET /api/tasks/:taskId/activities
+exports.getTaskActivities =
+    asyncHandler(async (req, res) => {
+
+        let action;
+        if (req.query.action) {
+            action = req.query.action;
+        }
+
+        const result = await baseGetActivities(
+            // filter
+            {
+                project: req.params.projectId,
+                action,
+            },
+            {
+                page: req.query.page,
+                limit: req.query.limit,
+                sort: {
+                    createdAt: -1,
+                },
+                populate: [
+                    {
+                        path: "performedBy",
+                        select: "name email",
+                    },
+                    {
+                        path: "task",
+                        select: "title",
+                    },
+                ],
+            }
+        );
+
+    })
