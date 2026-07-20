@@ -10,12 +10,12 @@ const authorizeProjectRole = require("../middleware/authorizeProjectRole");
 
 const validate = require("../middleware/validate");
 
-const { createProjectValidation, updateProjectValidation } = require("../validations/projectValidation");
+const { createProjectValidation, updateProjectValidation, updateProjectStatusValidation } = require("../validations/projectValidation");
 
-const { createProject, getProjects, getProject, updateProject, deleteProject } = require("../controllers/projectController");
+const { createProject, getProjects, getProject, updateProject, updateProjectStatus, deleteProject, getProjectActivities } = require("../controllers/projectController");
 
 projectRoutes.post(
-    "/api/organizations/:id/projects",
+    "/api/organizations/:organizationId/projects",
     protect,
     authorizeOrganizationRole(
         "org_admin",
@@ -25,7 +25,6 @@ projectRoutes.post(
     validate,
     createProject
 );
-
 
 projectRoutes.get(
     "/api/organizations/:id/projects",
@@ -61,6 +60,18 @@ projectRoutes.put(
     updateProject
 );
 
+projectRoutes.patch(
+    "/api/projects/:projectId",
+    protect,
+    authorizeProjectRole(
+        "org_admin",
+        "project_manager"
+    ),
+    updateProjectStatusValidation,
+    validate,
+    updateProjectStatus
+);
+
 projectRoutes.delete(
     "/api/projects/:projectId",
     protect,
@@ -69,6 +80,16 @@ projectRoutes.delete(
         "project_manager"
     ),
     deleteProject
+);
+
+projectRoutes.get(
+    "/api/projects/:projectId/activities",
+    protect,
+    authorizeProjectRole(
+        "org_admin",
+        "project_manager"
+    ),
+    getProjectActivities
 );
 
 module.exports = projectRoutes;

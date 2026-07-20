@@ -4,8 +4,11 @@ const Organization = require("../models/Organization");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const getProjectById = require("../services/projectService");
+const { baseGetActivities } = require("../services/baseGetActivities");
 
-// change
+const createActivity
+  = require("../services/activityService");
+
 exports.createProject =
   asyncHandler(async (req, res) => {
     const { name, description } =
@@ -18,10 +21,6 @@ exports.createProject =
         description,
         createdBy: req.user._id,
       });
-
-    // const populatedProject = await Project.findById(project._id)
-    //   .populate("organization", "name")
-    //   .populate("createdBy", "name email");
 
     const populatedProject =
       await getProjectById(
@@ -38,6 +37,11 @@ exports.createProject =
         ]
       )
 
+    await createActivity.logProjectCreated(
+      project,
+      req.user._id
+    )
+
     res.status(201).json({
       success: true,
       populatedProject,
@@ -50,7 +54,7 @@ exports.getProjects =
     // console.log(" req.params.organizationId", req.params.id);
 
     const projects =
-      await Project.find({ organization: req.organization._id })
+      await Project.find({ organization: req.organization._id, archived: false })
         .populate("organization", "name")
         .populate("createdBy", "name email");
 
@@ -60,8 +64,6 @@ exports.getProjects =
     });
   });
 
-
-// change
 exports.getProject =
   asyncHandler(async (req, res) => {
 
@@ -89,53 +91,110 @@ exports.getProject =
 
 exports.updateProject =
   asyncHandler(async (req, res) => {
-    const project =
-      await Project.findById(
-        req.params.projectId
-      );
 
-    if (!project) {
-      throw new ApiError(
-        404,
-        "Project not found"
-      );
-    }
+    let metadata = {};
 
-    const updatedProject =
-      await Project.findByIdAndUpdate(
-        req.params.projectId,
-        req.body,
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
+    Object.keys(req.body).forEach((key) => {
+      if (req.project[key] !== req.body[key]) {
+        metadata[key] = {
+          oldValue: req.project[key],
+          newValue: req.body[key]
+        };
+      }
+    });
+
+    Object.assign(
+      req.project,
+      req.body
+    );
+
+    req.project.save();
+
+    await createActivity.logProjectUpdated(
+      req.project,
+      req.user._id,
+      metadata
+    )
 
     res.status(200).json({
       success: true,
-      project: updatedProject,
+      project: req.project,
+    });
+  });
+
+exports.updateProjectStatus =
+  asyncHandler(async (req, res) => {
+
+    const newStatus = req.body.status;
+
+    const oldStatus = req.project.status;
+
+    req.project.status = newStatus;
+
+    req.project.save();
+
+    createActivity.logProjectStatusChange(
+      req.project,
+      req.user._id,
+      oldStatus,
+      newStatus
+    );
+
+    res.status(201).json({
+      success: true,
+      project: req.project,
     });
   });
 
 
 exports.deleteProject =
   asyncHandler(async (req, res) => {
-    const project =
-      await Project.findById(
-        req.params.projectId
-      );
 
-    if (!project) {
-      throw new ApiError(
-        404,
-        "Project not found"
-      );
-    }
+    req.project.archived = true;
+    req.project.save();
 
-    await project.deleteOne();
+    await createActivity.logProjectDeleted(
+      req.project,
+      req.user._id
+    )
 
     res.status(200).json({
       success: true,
       message: "Project deleted successfully",
     });
   });
+
+exports.getProjectActivities =
+  asyncHandler(async (req, res) => {
+
+    let action;
+    if (req.query.action) {
+      action = req.query.action;
+    }
+
+    const result = await baseGetActivities(
+      // filter
+      {
+        project: req.params.projectId,
+        action
+      },
+      // {
+      //   page: req.query.page,
+      //   limit: req.query.limit,
+      //   sort: {
+      //     createdAt: -1,
+      //   },
+      //   populate: [
+      //     {
+      //       path: "performedBy",
+      //       select: "name email",
+      //     },
+      //     {
+      //       path: "task",
+      //       select: "title",
+      //     },
+      //   ],
+      // }
+    );
+
+  })

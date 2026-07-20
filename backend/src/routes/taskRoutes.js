@@ -12,7 +12,7 @@ const validate = require("../middleware/validate");
 
 const { createTaskValidation, updateTaskValidation, assignTaskValidation, moveTaskValidation } = require("../validations/taskValidation");
 
-const { createTask, getTasks, getTask, updateTask, deleteTask, assignTask, moveTask } = require("../controllers/taskController");
+const { createTask, getTasks, getTask, updateTask, deleteTask, assignTask, moveTask, getTaskActivities } = require("../controllers/taskController");
 
 taskRoutes.post(
     "/api/projects/:projectId/tasks",
@@ -85,7 +85,7 @@ taskRoutes.patch(
 
 // PATCH /api/tasks/:taskId/move
 taskRoutes.patch(
-    "/api/tasks/:taskId",
+    "/api/tasks/:taskId/move",
     protect,
     authorizeTaskRole(
         "org_admin",
@@ -96,6 +96,19 @@ taskRoutes.patch(
     validate,
     moveTask
 );
+
+// GET /api/tasks/:taskId/activities
+taskRoutes.get(
+    "/api/tasks/:taskId/activities",
+    protect,
+    authorizeTaskRole(
+        "org_admin",
+        "project_manager",
+        "developer"
+    ),
+    getTaskActivities
+);
+
 
 module.exports = taskRoutes;
 

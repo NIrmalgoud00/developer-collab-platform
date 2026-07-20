@@ -15,7 +15,7 @@ const authorizeOrganizationRole =
             next
         ) => {
 
-            const organization = await getOrganizationById(req.params.id);
+            const organization = await getOrganizationById(req.params.organizationId);
 
             const member =
                 organization.members.find(

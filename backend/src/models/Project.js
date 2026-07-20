@@ -25,7 +25,6 @@ const projectSchema = new mongoose.Schema(
                 "planning",
                 "active",
                 "completed",
-                "archived",
             ],
             default: "planning",
         },
@@ -35,6 +34,11 @@ const projectSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+
+        archived: {
+            type: Boolean,
+            default: false
+        }
     },
     {
         timestamps: true,

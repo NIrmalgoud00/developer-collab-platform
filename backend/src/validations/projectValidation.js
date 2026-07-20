@@ -37,7 +37,17 @@ const updateProjectValidation = [
             "planning",
             "active",
             "completed",
-            "archived"
+        ])
+        .withMessage("Invalid status"),
+];
+
+const updateProjectStatusValidation = [
+    body("status")
+        .optional()
+        .isIn([
+            "planning",
+            "active",
+            "completed",
         ])
         .withMessage("Invalid status"),
 ];
@@ -45,4 +55,5 @@ const updateProjectValidation = [
 module.exports = {
     createProjectValidation,
     updateProjectValidation,
+    updateProjectStatusValidation
 };
