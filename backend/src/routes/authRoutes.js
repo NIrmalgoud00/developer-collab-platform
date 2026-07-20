@@ -29,4 +29,9 @@ authRoutes.post("/login", loginValidation,
 
 authRoutes.get("/me", protect, getMe);
 
+// GET / api / users / me / activities
+// authRoutes.get("/me/activities", protect, getMeActivities);
+// do later
+
+
 module.exports = authRoutes;
