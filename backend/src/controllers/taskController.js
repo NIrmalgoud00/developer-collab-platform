@@ -164,13 +164,30 @@ exports.updateTask =
         const metadata = {};
 
         Object.keys(req.body).forEach((key) => {
-            if (task[key] !== req.body[key]) {
+            const oldValue = task[key];
+            const newValue = req.body[key];
+
+            const isChanged =
+                oldValue instanceof mongoose.Types.ObjectId
+                    ? !oldValue.equals(newValue)
+                    : oldValue !== newValue;
+
+            if (isChanged) {
                 metadata[key] = {
                     oldValue: task[key],
                     newValue: req.body[key]
                 };
             }
         });
+
+        // Nothing changed
+        if (Object.keys(metadata).length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No changes detected",
+                task
+            });
+        }
 
         Object.assign(
             task,

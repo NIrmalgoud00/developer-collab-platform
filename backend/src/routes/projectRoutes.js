@@ -27,7 +27,7 @@ projectRoutes.post(
 );
 
 projectRoutes.get(
-    "/api/organizations/:id/projects",
+    "/api/organizations/:organizationId/projects",
     protect,
     authorizeOrganizationRole(
         "org_admin",

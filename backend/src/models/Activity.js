@@ -23,6 +23,13 @@ const activitySchema = new mongoose.Schema(
             index: true
         },
 
+        comment: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Comment",
+            default: null,
+            index: true
+        },
+
         performedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",

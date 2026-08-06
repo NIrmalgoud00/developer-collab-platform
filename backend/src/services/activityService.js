@@ -9,6 +9,7 @@ const createActivity =
         organization,
         project,
         task,
+        comment,
         performedBy,
         action,
         metadata
@@ -17,6 +18,7 @@ const createActivity =
             organization,
             project,
             task,
+            comment,
             performedBy,
             action,
             metadata
@@ -253,6 +255,54 @@ const logTaskMoved = async (
 }
 
 
+// Comments
+const logCommentCreated = async (
+    comment,
+    performedBy,
+) => {
+    return createActivity({
+        organization: comment.organization,
+        project: comment.project,
+        task: comment.task,
+        comment: comment._id,
+        performedBy,
+        action: ACTIVITY_ACTIONS.COMMENT_CREATED,
+        metadata: {
+            commentContent: comment.content
+        },
+    });
+}
+
+const logCommentUpdated = async (
+    comment,
+    performedBy,
+    metadata
+) => {
+    return createActivity({
+        organization: comment.organization,
+        project: comment.project,
+        task: comment.task,
+        comment: comment._id,
+        performedBy,
+        action: ACTIVITY_ACTIONS.COMMENT_UPDATED,
+        metadata,
+    });
+}
+
+const logCommentDeleted = async (
+    comment,
+    performedBy
+) => {
+    return createActivity({
+        organization: comment.organization,
+        project: comment.project,
+        task: comment.task,
+        comment: comment._id,
+        performedBy,
+        action: ACTIVITY_ACTIONS.COMMENT_ARCHIVED,
+    });
+}
+
 module.exports = {
     // Organization
     logOrganizationCreated,
@@ -276,4 +326,9 @@ module.exports = {
     logTaskDeleted,
     logTaskAssigned,
     logTaskMoved,
+
+    // Comment
+    logCommentCreated,
+    logCommentUpdated,
+    logCommentDeleted,
 }
