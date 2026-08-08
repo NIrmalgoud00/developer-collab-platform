@@ -31,7 +31,7 @@ const logOrganizationCreated = async (
     organization,
     performedBy
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.ORGANIZATION_CREATED,
@@ -46,7 +46,7 @@ const logOrganizationUpdated = async (
     performedBy,
     metadata
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.ORGANIZATION_UPDATED,
@@ -58,7 +58,7 @@ const logOrganizationDeleted = async (
     organization,
     performedBy
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.ORGANIZATION_ARCHIVED,
@@ -71,7 +71,7 @@ const logMemberInvited = async (
     performedBy,
     userName
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.MEMBER_INVITED,
@@ -86,7 +86,7 @@ const logMemberRemoved = async (
     performedBy,
     userName
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.MEMBER_REMOVED,
@@ -103,7 +103,7 @@ const logMemberRoleUpdate = async (
     oldRole,
     newRole
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.MEMBER_ROLE_UPDATED,
@@ -120,7 +120,7 @@ const logProjectCreated = async (
     project,
     performedBy,
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: project.organization,
         project: project._id,
         performedBy,
@@ -136,7 +136,7 @@ const logProjectUpdated = async (
     performedBy,
     metadata
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: project.organization,
         project: project._id,
         performedBy,
@@ -151,7 +151,7 @@ const logProjectStatusChange = async (
     oldStatus,
     newStatus
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: project.organization,
         project: project._id,
         performedBy,
@@ -167,7 +167,7 @@ const logProjectDeleted = async (
     project,
     performedBy
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: project.organization,
         project: project._id,
         performedBy,
@@ -180,7 +180,7 @@ const logTaskCreated = async (
     task,
     performedBy,
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: task.organization,
         project: task.project,
         task: task._id,
@@ -197,7 +197,7 @@ const logTaskUpdated = async (
     performedBy,
     metadata
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: task.organization,
         project: task.project,
         task: task._id,
@@ -211,7 +211,7 @@ const logTaskDeleted = async (
     task,
     performedBy
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: task.organization,
         project: task.project,
         task: task._id,
@@ -226,7 +226,7 @@ const logTaskAssigned = async (
     newAssignee,
     previousAssignee
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: task.organization,
         project: task.project,
         task: task._id,
@@ -244,7 +244,7 @@ const logTaskMoved = async (
     performedBy,
     metadata
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: task.organization,
         project: task.project,
         task: task._id,
@@ -260,7 +260,7 @@ const logCommentCreated = async (
     comment,
     performedBy,
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: comment.organization,
         project: comment.project,
         task: comment.task,
@@ -278,7 +278,7 @@ const logCommentUpdated = async (
     performedBy,
     metadata
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: comment.organization,
         project: comment.project,
         task: comment.task,
@@ -293,13 +293,47 @@ const logCommentDeleted = async (
     comment,
     performedBy
 ) => {
-    return createActivity({
+    return await createActivity({
         organization: comment.organization,
         project: comment.project,
         task: comment.task,
         comment: comment._id,
         performedBy,
         action: ACTIVITY_ACTIONS.COMMENT_ARCHIVED,
+    });
+}
+
+
+// Attachments
+const logUploadFile = async (
+    task,
+    performedBy,
+    metadata
+) => {
+    return await createActivity({
+        organization: task.organization,
+        project: task.project,
+        task: task._id,
+        performedBy,
+        action: ACTIVITY_ACTIONS.ATTACHMENT_UPLOADED,
+        metadata,
+    });
+}
+
+const logDeleteFile = async (
+    attachment,
+    performedBy,
+) => {
+    return await createActivity({
+        organization: attachment.organization,
+        project: attachment.project,
+        task: attachment.task,
+        performedBy,
+        action: ACTIVITY_ACTIONS.ATTACHMENT_DELETED,
+        metadata: {
+            attachmentId: attachment._id,
+            fileName: attachment.originalname,
+        },
     });
 }
 
@@ -331,4 +365,8 @@ module.exports = {
     logCommentCreated,
     logCommentUpdated,
     logCommentDeleted,
+
+    // Attachments
+    logUploadFile,
+    logDeleteFile,
 }
