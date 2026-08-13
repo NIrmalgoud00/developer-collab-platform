@@ -4,10 +4,10 @@ const cookieParser = require("cookie-parser");
 
 const errorHandler = require("./middleware/errorMiddleware");
 const authRoutes = require("./routes/authRoutes");
-const organizationRoutes = require("./routes/organizationRoutes");
-const projectRoutes = require("./routes/projectRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const commentRoutes = require("./routes/commentRoutes");
+const organizationRouter = require("./routes/organizationRoutes");
+const projectRouter = require("./routes/projectRoutes");
+const taskRouter = require("./routes/taskRoutes");
+const commentRouter = require("./routes/commentRoutes");
 const attachmentRouter = require("./routes/attachmentRoutes");
 
 const app = express();
@@ -20,11 +20,11 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 
-app.use("/api/organizations", organizationRoutes);
-app.use(projectRoutes);
-app.use(taskRoutes);
+app.use("/api/organizations", organizationRouter);
+app.use(projectRouter);
+app.use(taskRouter);
 app.use(attachmentRouter);
-app.use(commentRoutes);
+app.use(commentRouter);
 
 app.get("/api/health", (req, res) => {
     res.status(200).json({

@@ -2,11 +2,27 @@ const ApiError = require(
     "../utils/ApiError"
 );
 
-
 const getOrganizationById = require(
     "../services/organizationService"
 );
+const asyncHandler = require("../utils/asyncHandler");
 
+// Load Organization
+const loadOrganization = asyncHandler(
+    async (req, res, next) => {
+
+        const organization =
+            await getOrganizationById(
+                req.params.organizationId
+            );
+
+        req.organization = organization;
+
+        next();
+    }
+);
+
+// Authorize Organization Role
 const authorizeOrganizationRole =
     (...allowedRoles) => {
         return async (
@@ -15,20 +31,18 @@ const authorizeOrganizationRole =
             next
         ) => {
 
-            const organization = await getOrganizationById(req.params.organizationId);
+            const organization = req.organization;
 
             const member =
                 organization.members.find(
-                    (member) =>
-                        member.user.toString() ===
-                        req.user._id.toString()
+                    (member) => member.user.equals(req.user._id)
                 );
 
             if (!member) {
                 return next(
                     new ApiError(
                         403,
-                        "You are not a member of this organization"
+                        "You are not Owner of this organization"
                     )
                 );
             }
@@ -46,9 +60,6 @@ const authorizeOrganizationRole =
                 );
             }
 
-            req.organization =
-                organization;
-
             req.organizationMember =
                 member;
 
@@ -56,4 +67,7 @@ const authorizeOrganizationRole =
         };
     };
 
-module.exports = authorizeOrganizationRole;
+module.exports = {
+    loadOrganization,
+    authorizeOrganizationRole
+};

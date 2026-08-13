@@ -84,34 +84,26 @@ const logMemberInvited = async (
 const logMemberRemoved = async (
     organization,
     performedBy,
-    userName
+    metadata
 ) => {
     return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.MEMBER_REMOVED,
-        metadata: {
-            userName,
-        },
+        metadata,
     });
 }
 
 const logMemberRoleUpdate = async (
     organization,
     performedBy,
-    userId,
-    oldRole,
-    newRole
+    metadata
 ) => {
     return await createActivity({
         organization: organization._id,
         performedBy,
         action: ACTIVITY_ACTIONS.MEMBER_ROLE_UPDATED,
-        metadata: {
-            user: userId,
-            oldRole,
-            newRole
-        },
+        metadata,
     });
 }
 
@@ -148,18 +140,14 @@ const logProjectUpdated = async (
 const logProjectStatusChange = async (
     project,
     performedBy,
-    oldStatus,
-    newStatus
+    metadata
 ) => {
     return await createActivity({
         organization: project.organization,
         project: project._id,
         performedBy,
         action: ACTIVITY_ACTIONS.PROJECT_STATUS_CHANGED,
-        metadata: {
-            oldStatus,
-            newStatus
-        }
+        metadata
     });
 }
 
@@ -223,8 +211,7 @@ const logTaskDeleted = async (
 const logTaskAssigned = async (
     task,
     performedBy,
-    newAssignee,
-    previousAssignee
+    metadata
 ) => {
     return await createActivity({
         organization: task.organization,
@@ -232,10 +219,7 @@ const logTaskAssigned = async (
         task: task._id,
         performedBy,
         action: ACTIVITY_ACTIONS.TASK_ASSIGNED,
-        metadata: {
-            previousAssignee: previousAssignee || null,
-            newAssignee,
-        },
+        metadata,
     });
 }
 

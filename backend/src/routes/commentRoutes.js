@@ -1,14 +1,12 @@
 const express = require("express");
 
-const commentRoutes = express.Router();
+const commentRouter = express.Router();
 
 const protect = require("../middleware/authMiddleware");
 
-const authorizeTaskRole = require("../middleware/authorizeTaskRole");
+const { loadTask, authorizeTaskRole } = require("../middleware/taskMiddleware");
 
-const authorizeOrganizationRole = require("../middleware/authorizeOrganizationRole");
-
-const authorizeRoleAndOwner = require("../middleware/authorizeRoleAndOwner")
+const { loadComment, authorizeOwnership } = require("../middleware/authorizeOwnership")
 
 const { createCommentValidation, updateCommentValidation } = require("../validations/commentValidation")
 
@@ -16,9 +14,10 @@ const validate = require("../middleware/validate");
 
 const { createComment, getComments, updateComment, deleteComment } = require("../controllers/commentController")
 
-commentRoutes.post(
+commentRouter.post(
     "/api/tasks/:taskId/comments",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager",
@@ -29,19 +28,21 @@ commentRoutes.post(
     createComment
 );
 
-commentRoutes.get(
+commentRouter.get(
     "/api/tasks/:taskId/comments",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager",
         "developer"
     ),
+    validate,
     getComments
 );
 
 // Not Required
-// commentRoutes.get(
+// commentRouter.get(
 //     "/api/comments/:commentId",
 //     protect,
 //     authorizeTaskRole(
@@ -54,34 +55,33 @@ commentRoutes.get(
 
 // PUT / api / comments /: commentId
 
-commentRoutes.put(
+commentRouter.put(
     "/api/comments/:commentId",
     protect,
-    authorizeRoleAndOwner(
+    loadComment,
+    authorizeTaskRole(
         "org_admin",
         "project_manager",
         "developer"
     ),
+    authorizeOwnership(),
     updateCommentValidation,
     validate,
     updateComment
 );
 
-commentRoutes.delete(
+commentRouter.delete(
     "/api/comments/:commentId",
     protect,
-    authorizeRoleAndOwner(
+    loadComment,
+    authorizeTaskRole(
         "org_admin",
         "project_manager",
         "developer"
     ),
+    authorizeOwnership(),
     validate,
     deleteComment
 );
 
-// db.your_collection_name.updateMany(
-//     {},
-//     { $set: { new_field_name: "default_value" } }
-// );
-
-module.exports = commentRoutes;
+module.exports = commentRouter;

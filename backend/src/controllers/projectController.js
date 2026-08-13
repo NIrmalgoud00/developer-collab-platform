@@ -1,11 +1,9 @@
 const Project = require("../models/Project");
-const Organization = require("../models/Organization");
 
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const getProjectById = require("../services/projectService");
 const { baseGetActivities } = require("../services/baseGetActivities");
-
 const createActivity
   = require("../services/activityService");
 
@@ -22,6 +20,11 @@ exports.createProject =
         createdBy: req.user._id,
       });
 
+    await createActivity.logProjectCreated(
+      project,
+      req.user._id
+    )
+
     const populatedProject =
       await getProjectById(
         project._id,
@@ -37,11 +40,6 @@ exports.createProject =
         ]
       )
 
-    await createActivity.logProjectCreated(
-      project,
-      req.user._id
-    )
-
     res.status(201).json({
       success: true,
       populatedProject,
@@ -50,8 +48,6 @@ exports.createProject =
 
 exports.getProjects =
   asyncHandler(async (req, res) => {
-
-    // console.log(" req.params.organizationId", req.params.id);
 
     const projects =
       await Project.find({ organization: req.organization._id, archived: false })
@@ -108,7 +104,7 @@ exports.updateProject =
       req.body
     );
 
-    req.project.save();
+    await req.project.save();
 
     await createActivity.logProjectUpdated(
       req.project,
@@ -116,9 +112,25 @@ exports.updateProject =
       metadata
     )
 
+    const populatedProject =
+      await getProjectById(
+        req.project._id,
+        [
+          {
+            path: "organization",
+            select: "name"
+          },
+          {
+            path: "createdBy",
+            select: "name email"
+          }
+        ]
+      )
+
     res.status(200).json({
       success: true,
-      project: req.project,
+      message: "Project Update Successsfully",
+      populatedProject
     });
   });
 
@@ -131,18 +143,35 @@ exports.updateProjectStatus =
 
     req.project.status = newStatus;
 
-    req.project.save();
+    await req.project.save();
 
     createActivity.logProjectStatusChange(
       req.project,
       req.user._id,
-      oldStatus,
-      newStatus
+      {
+        oldStatus,
+        newStatus
+      }
     );
+
+    const populatedProject =
+      await getProjectById(
+        req.project._id,
+        [
+          {
+            path: "organization",
+            select: "name"
+          },
+          {
+            path: "createdBy",
+            select: "name email"
+          }
+        ]
+      )
 
     res.status(201).json({
       success: true,
-      project: req.project,
+      populatedProject,
     });
   });
 
@@ -151,7 +180,7 @@ exports.deleteProject =
   asyncHandler(async (req, res) => {
 
     req.project.archived = true;
-    req.project.save();
+    await req.project.save();
 
     await createActivity.logProjectDeleted(
       req.project,
@@ -164,6 +193,7 @@ exports.deleteProject =
     });
   });
 
+// Activities
 exports.getProjectActivities =
   asyncHandler(async (req, res) => {
 

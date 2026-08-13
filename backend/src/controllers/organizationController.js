@@ -18,6 +18,7 @@ const createActivity =
 
 const getUserById =
   require("../services/userService");
+const getOrganizationById = require("../services/organizationService");
 
 // Organization
 exports.createOrganization =
@@ -42,9 +43,23 @@ exports.createOrganization =
       req.user._id
     )
 
+    const populateOrganization = await getOrganizationById(
+      organization._id,
+      [
+        {
+          path: "owner",
+          select: "name email"
+        },
+        {
+          path: "members.user",
+          select: "name email"
+        },
+      ]
+    )
+
     res.status(201).json({
       success: true,
-      organization,
+      populateOrganization,
     });
   });
 
@@ -56,6 +71,10 @@ exports.getOrganizations =
       })
         .populate(
           "owner",
+          "name email"
+        )
+        .populate(
+          "members.user",
           "name email"
         );
 
@@ -92,9 +111,23 @@ exports.updateOrganization =
       metadata
     )
 
+    const populateOrganization = await getOrganizationById(
+      req.organization._id,
+      [
+        {
+          path: "owner",
+          select: "name email"
+        },
+        {
+          path: "members.user",
+          select: "name email"
+        },
+      ]
+    )
+
     res.status(201).json({
       success: true,
-      organizations: req.organization,
+      populateOrganization,
     });
   });
 
@@ -119,9 +152,7 @@ exports.deleteOrganization =
 // Members
 exports.inviteMember =
   asyncHandler(async (req, res) => {
-
     const { email, role } = req.body;
-
     const organization = req.organization;
 
     const user =
@@ -136,9 +167,7 @@ exports.inviteMember =
 
     const alreadyMember =
       organization.members.some(
-        (member) =>
-          member.user.toString() ===
-          user._id.toString()
+        (member) => member.user.equals(user._id)
       );
 
     if (alreadyMember) {
@@ -176,10 +205,17 @@ exports.removeMember =
     const user =
       await User.findOne({ email });
 
+    if (!user) {
+      throw new ApiError(
+        404,
+        "User not found"
+      );
+    }
+
     const noMember =
       req.organization.members.some(
         (member) => {
-          member.user.toString() !== user._id.toString()
+          member.user.equals(user._id)
         }
       );
 
@@ -191,7 +227,7 @@ exports.removeMember =
     }
 
     const members = req.organization.members.filter((member) =>
-      member.user.toString() !== user._id.toString()
+      !member.user.equals(user._id)
     );
 
     req.organization.members = members;
@@ -201,7 +237,7 @@ exports.removeMember =
     await createActivity.logMemberRemoved(
       req.organization,
       req.user._id,
-      user.name
+      { userName: user.name }
     )
 
     res.status(200).json({
@@ -221,12 +257,10 @@ exports.memberRoleUpdate =
 
     const noMember =
       req.organization.members.some(
-        (member) => {
-          member.user.toString() !== user._id.toString()
-        }
+        (member) => member.user.equals(user._id)
       );
 
-    if (noMember) {
+    if (!noMember) {
       throw new ApiError(
         400,
         "User is not member or this organization"
@@ -236,7 +270,7 @@ exports.memberRoleUpdate =
     let oldRole;
 
     const members = req.organization.members.map((member) => {
-      if (member.user.toString() === user._id.toString()) {
+      if (member.user.equals(user._id)) {
         oldRole = member.role;
         return { ...member.toObject(), role: newRole };
       }
@@ -251,9 +285,11 @@ exports.memberRoleUpdate =
     await createActivity.logMemberRoleUpdate(
       req.organization,
       req.user._id,
-      user._id,
-      oldRole,
-      newRole
+      {
+        user: user._id,
+        oldRole,
+        newRole
+      }
     )
 
     res.status(201).json({

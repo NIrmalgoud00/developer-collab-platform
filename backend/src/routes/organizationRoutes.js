@@ -1,14 +1,14 @@
 const express =
     require("express");
 
-const organizationRoutes =
+const organizationRouter =
     express.Router();
 
 const protect =
     require("../middleware/authMiddleware");
 
-const authorizeOrganizationRole =
-    require("../middleware/authorizeOrganizationRole");
+const { loadOrganization, authorizeOrganizationRole } =
+    require("../middleware/organizationMiddleware");
 
 const {
     createOrganizationValidation,
@@ -30,67 +30,73 @@ const {
 } = require(
     "../controllers/organizationController"
 );
+const getOrganizationById = require("../services/organizationService");
 
 // Organization
-organizationRoutes.post(
+organizationRouter.post(
     "/",
     protect,
     createOrganizationValidation,
     createOrganization
 );
 
-organizationRoutes.get(
+organizationRouter.get(
     "/",
     protect,
     getOrganizations
 );
 
-organizationRoutes.put(
+organizationRouter.put(
     "/:organizationId",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     updateOrganizationValidation,
     updateOrganization
 )
 
-organizationRoutes.delete(
+organizationRouter.delete(
     "/:organizationId",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     deleteOrganization
 )
 
-
 // Members
-organizationRoutes.post(
+organizationRouter.post(
     "/:organizationId/invite",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     inviteMemberValidation,
     inviteMember
 )
 
-organizationRoutes.post(
+organizationRouter.post(
     "/:organizationId/remove",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     removeMember
 )
 
-organizationRoutes.put(
+organizationRouter.put(
     "/:organizationId/updateMemberRole",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     roleUpdateValidation,
     memberRoleUpdate
 )
 
 // Activity
-organizationRoutes.get(
+organizationRouter.get(
     "/:organizationId/activities",
     protect,
+    loadOrganization,
     authorizeOrganizationRole("org_admin"),
     getOrganizationActivities
 )
 
-module.exports = organizationRoutes;
+module.exports = organizationRouter;

@@ -2,30 +2,45 @@ const ApiError = require(
     "../utils/ApiError"
 );
 
+const getProjectById = require(
+    "../services/projectService"
+);
+
 const getOrganizationById = require(
     "../services/organizationService"
 );
+const asyncHandler = require("../utils/asyncHandler");
 
-const getTaskById = require(
-    "../services/taskService"
+// Load Project
+const loadProject = asyncHandler(
+    async (req, res, next) => {
+
+        const project =
+            await getProjectById(
+                req.params.projectId
+            );
+
+        req.project = project;
+
+        next();
+    }
 );
 
-const authorizeTaskRole =
+// Authorize Project Role
+const authorizeProjectRole =
     (...allowedRoles) => {
         return async (
             req,
             res,
             next
         ) => {
-            const task = await getTaskById(req.params.taskId);
+            const project = req.project;
 
-            const organization = await getOrganizationById(task.organization);
+            const organization = await getOrganizationById(project.organization);
 
             const member =
                 organization.members.find(
-                    (member) =>
-                        member.user.toString() ===
-                        req.user._id.toString()
+                    (member) => member.user.equals(req.user._id)
                 );
 
             if (!member) {
@@ -50,9 +65,6 @@ const authorizeTaskRole =
                 );
             }
 
-            req.task =
-                task;
-
             req.organization =
                 organization;
 
@@ -63,4 +75,4 @@ const authorizeTaskRole =
         };
     };
 
-module.exports = authorizeTaskRole;
+module.exports = { loadProject, authorizeProjectRole };

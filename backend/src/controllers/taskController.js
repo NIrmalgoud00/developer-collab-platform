@@ -16,22 +16,36 @@ const createActivity = require("../services/activityService");
 
 const { ACTIVITY_ACTIONS } = require("../constants/activityActions");
 
+const { default: mongoose } = require("mongoose");
+
 const Task = require("../models/Task");
 const Activity = require("../models/Activity");
 const { baseGetActivities } = require("../services/baseGetActivities");
+const User = require("../models/User");
 
 exports.createTask =
     asyncHandler(async (req, res) => {
 
-        let project = await getProjectById(req.params.projectId)
-
         const position =
             await Task.countDocuments({
-                project: project._id,
+                project: req.project._id,
                 status: "todo"
             });
 
         const { title, description, status, priority, assignee, dueDate, labels } = req.body;
+
+        if (assignee) {
+            const user = await User.findOne({ email });
+
+            if (!user) {
+                throw new ApiError(
+                    404,
+                    "User not found"
+                );
+            }
+
+            assignee = user._id;
+        }
 
         const task =
             await Task.create({
@@ -85,7 +99,7 @@ exports.getTasks =
     asyncHandler(async (req, res) => {
 
         const filter = {
-            project: req.params.projectId,
+            project: req.project._id,
             archived: false // not deleted  
         };
 
@@ -202,10 +216,32 @@ exports.updateTask =
             metadata
         );
 
+        const populateTask =
+            await getTaskById(
+                req.task._id,
+                [
+                    {
+                        path: "organization",
+                        select: "name"
+                    },
+                    {
+                        path: "project",
+                        select: "name"
+                    },
+                    {
+                        path: "assignee",
+                        select: "name email"
+                    },
+                    {
+                        path: "reporter",
+                        select: "name email"
+                    }
+                ]);
+
         res.status(200).json({
             success: true,
             message: "Task update successfully",
-            task
+            populateTask
         });
 
     })
@@ -234,18 +270,24 @@ exports.assignTask =
     asyncHandler(async (req, res) => {
 
         const task = req.task;
+        const { email } = req.body
 
-        const user = await getUserById(req.body.userId);
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            throw new ApiError(
+                404,
+                "User not found"
+            );
+        }
 
         const member =
             req.organization.members.find(
-                (member) =>
-                    member.user.toString() ===
-                    user._id.toString()
+                (member) => member.user.equals(user._id)
             );
 
         if (!member) {
-            new ApiError(
+            throw new ApiError(
                 403,
                 "User is not a member of this organization"
             )
@@ -259,8 +301,14 @@ exports.assignTask =
         await createActivity.logTaskAssigned(
             task,
             req.user._id,
-            user.name,
-            previousAssignee // optional
+            {
+                previousAssignee: previousAssignee || null,
+                newAssignee: {
+                    userId: task.assignee,
+                    userName: user.name,
+                }
+
+            }
         );
 
         res.status(200).json({
