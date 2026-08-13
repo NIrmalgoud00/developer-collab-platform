@@ -12,11 +12,13 @@ exports.createComment =
     asyncHandler(async (req, res) => {
         const { content } = req.body;
 
+        const task = req.task;
+
         const comment =
             await Comment.create({
-                organization: req.task.organization,
-                project: req.task.project,
-                task: req.task._id,
+                organization: task.organization,
+                project: task.project,
+                task: task._id,
                 createBy: req.user._id,
                 content
             });
@@ -58,17 +60,9 @@ exports.getComments =
     asyncHandler(async (req, res) => {
 
         const filter = {
-            task: req.params.taskId,
+            task: req.task._id,
             archived: false // not deleted  
         };
-
-        // if (req.query.status && req.query.status !== "") {
-        //     filter.status = req.query.status;
-        // }
-
-        // if (req.query.priority && req.query.priority !== "") {
-        //     filter.priority = req.query.priority;
-        // }
 
         const comments =
             await Comment.find(filter)
@@ -126,10 +120,32 @@ exports.updateComment =
             metadata
         );
 
+        const populatedComment =
+            await getCommentById(
+                comment._id,
+                [
+                    {
+                        path: "organization",
+                        select: "name"
+                    },
+                    {
+                        path: "project",
+                        select: "name"
+                    },
+                    {
+                        path: "task",
+                        select: "title"
+                    },
+                    {
+                        path: "createBy",
+                        select: "name email"
+                    }
+                ]);
+
         res.status(200).json({
             success: true,
             message: "Comment update successfully",
-            comment
+            populatedComment
         });
     })
 

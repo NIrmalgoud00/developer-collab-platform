@@ -1,12 +1,12 @@
 const express = require("express");
 
-const taskRoutes = express.Router();
+const taskRouter = express.Router();
 
 const protect = require("../middleware/authMiddleware");
 
-const authorizeProjectRole = require("../middleware/authorizeProjectRole");
+const { loadProject, authorizeProjectRole } = require("../middleware/projectMiddleware");
 
-const authorizeTaskRole = require("../middleware/authorizeTaskRole");
+const { loadTask, authorizeTaskRole } = require("../middleware/taskMiddleware");
 
 const validate = require("../middleware/validate");
 
@@ -14,9 +14,10 @@ const { createTaskValidation, updateTaskValidation, assignTaskValidation, moveTa
 
 const { createTask, getTasks, getTask, updateTask, deleteTask, assignTask, moveTask, getTaskActivities } = require("../controllers/taskController");
 
-taskRoutes.post(
+taskRouter.post(
     "/api/projects/:projectId/tasks",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager"
@@ -27,9 +28,10 @@ taskRoutes.post(
 );
 
 // GET /projects/:projectId/tasks?status=todo
-taskRoutes.get(
+taskRouter.get(
     "/api/projects/:projectId/tasks",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager",
@@ -38,9 +40,10 @@ taskRoutes.get(
     getTasks
 );
 
-taskRoutes.get(
+taskRouter.get(
     "/api/tasks/:taskId",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager",
@@ -49,31 +52,35 @@ taskRoutes.get(
     getTask
 );
 
-taskRoutes.put(
+taskRouter.put(
     "/api/tasks/:taskId",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
-        "project_manager"
+        "project_manager",
     ),
     updateTaskValidation,
     validate,
     updateTask
 );
 
-taskRoutes.delete(
+taskRouter.delete(
     "/api/tasks/:taskId",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager"
     ),
+    validate,
     deleteTask
 );
 
-taskRoutes.patch(
+taskRouter.patch(
     "/api/tasks/:taskId",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager"
@@ -84,13 +91,13 @@ taskRoutes.patch(
 );
 
 // PATCH /api/tasks/:taskId/move
-taskRoutes.patch(
+taskRouter.patch(
     "/api/tasks/:taskId/move",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager",
-        "developer"
     ),
     moveTaskValidation,
     validate,
@@ -98,9 +105,10 @@ taskRoutes.patch(
 );
 
 // GET /api/tasks/:taskId/activities
-taskRoutes.get(
+taskRouter.get(
     "/api/tasks/:taskId/activities",
     protect,
+    loadTask,
     authorizeTaskRole(
         "org_admin",
         "project_manager",
@@ -110,7 +118,7 @@ taskRoutes.get(
 );
 
 
-module.exports = taskRoutes;
+module.exports = taskRouter;
 
 
 

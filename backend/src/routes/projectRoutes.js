@@ -1,12 +1,12 @@
 const express = require("express");
 
-const projectRoutes = express.Router();
+const projectRouter = express.Router();
 
 const protect = require("../middleware/authMiddleware");
 
-const authorizeOrganizationRole = require("../middleware/authorizeOrganizationRole");
+const { loadOrganization, authorizeOrganizationRole } = require("../middleware/organizationMiddleware");
 
-const authorizeProjectRole = require("../middleware/authorizeProjectRole");
+const { loadProject, authorizeProjectRole } = require("../middleware/projectMiddleware");
 
 const validate = require("../middleware/validate");
 
@@ -14,9 +14,10 @@ const { createProjectValidation, updateProjectValidation, updateProjectStatusVal
 
 const { createProject, getProjects, getProject, updateProject, updateProjectStatus, deleteProject, getProjectActivities } = require("../controllers/projectController");
 
-projectRoutes.post(
+projectRouter.post(
     "/api/organizations/:organizationId/projects",
     protect,
+    loadOrganization,
     authorizeOrganizationRole(
         "org_admin",
         "project_manager"
@@ -26,9 +27,10 @@ projectRoutes.post(
     createProject
 );
 
-projectRoutes.get(
+projectRouter.get(
     "/api/organizations/:organizationId/projects",
     protect,
+    loadOrganization,
     authorizeOrganizationRole(
         "org_admin",
         "project_manager",
@@ -37,9 +39,10 @@ projectRoutes.get(
     getProjects
 );
 
-projectRoutes.get(
+projectRouter.get(
     "/api/projects/:projectId",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager",
@@ -48,9 +51,10 @@ projectRoutes.get(
     getProject
 );
 
-projectRoutes.put(
+projectRouter.put(
     "/api/projects/:projectId",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager"
@@ -60,9 +64,10 @@ projectRoutes.put(
     updateProject
 );
 
-projectRoutes.patch(
+projectRouter.patch(
     "/api/projects/:projectId",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager"
@@ -72,9 +77,10 @@ projectRoutes.patch(
     updateProjectStatus
 );
 
-projectRoutes.delete(
+projectRouter.delete(
     "/api/projects/:projectId",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager"
@@ -82,9 +88,12 @@ projectRoutes.delete(
     deleteProject
 );
 
-projectRoutes.get(
+
+// Activitives
+projectRouter.get(
     "/api/projects/:projectId/activities",
     protect,
+    loadProject,
     authorizeProjectRole(
         "org_admin",
         "project_manager"
@@ -92,4 +101,4 @@ projectRoutes.get(
     getProjectActivities
 );
 
-module.exports = projectRoutes;
+module.exports = projectRouter;

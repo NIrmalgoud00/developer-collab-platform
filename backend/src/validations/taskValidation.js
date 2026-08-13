@@ -75,12 +75,13 @@ const updateTaskValidation = [
 
 const assignTaskValidation = [
 
-    body("userId")
+    body("email")
+        .isEmail()
         .notEmpty()
         .withMessage("User is required")
-
-        .isMongoId()
-        .withMessage("Invalid user id")
+        .withMessage(
+            "Valid email required"
+        ),
 
 ];
 

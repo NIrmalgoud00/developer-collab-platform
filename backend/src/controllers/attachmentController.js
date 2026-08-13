@@ -8,6 +8,7 @@ const createActivity = require("../services/activityService");
 
 const getAttachmentById = require("../services/attachmentService");
 const { log } = require("console");
+const ApiError = require("../utils/ApiError");
 
 exports.createAttachment = asyncHandler(async (req, res) => {
 
