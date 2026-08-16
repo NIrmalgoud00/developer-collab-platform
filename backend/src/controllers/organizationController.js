@@ -18,7 +18,15 @@ const createActivity =
 
 const getUserById =
   require("../services/userService");
-const getOrganizationById = require("../services/organizationService");
+
+const getOrganizationById =
+  require("../services/organizationService");
+
+const { createNotification } =
+  require("../services/notificationService")
+
+const NOTIFICATION_TYPES =
+  require("../constants/notificationTypes")
 
 // Organization
 exports.createOrganization =
@@ -166,7 +174,7 @@ exports.inviteMember =
     }
 
     const alreadyMember =
-      organization.members.some(
+      req.organization.members.some(
         (member) => member.user.equals(user._id)
       );
 
@@ -177,15 +185,34 @@ exports.inviteMember =
       );
     }
 
-    organization.members.push({
+    req.organization.members.push({
       user: user._id,
       role,
     });
 
-    await organization.save();
+    await createNotification({
+      recipient: user._id,
+
+      organization: req.organization._id,
+
+      type: NOTIFICATION_TYPES.MEMBER_INVITED,
+
+      actor: req.user._id,
+
+      entityType: "Organization",
+
+      entityId: req.organization._id,
+
+      metadata: {
+        organizationName: req.organization.name,
+        role: role,
+      },
+    });
+
+    await req.organization.save();
 
     await createActivity.logMemberInvited(
-      organization,
+      req.organization,
       req.user._id,
       user.name
     )

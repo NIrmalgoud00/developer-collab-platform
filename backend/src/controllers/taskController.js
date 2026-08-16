@@ -19,9 +19,16 @@ const { ACTIVITY_ACTIONS } = require("../constants/activityActions");
 const { default: mongoose } = require("mongoose");
 
 const Task = require("../models/Task");
+
 const Activity = require("../models/Activity");
+
 const { baseGetActivities } = require("../services/baseGetActivities");
+
 const User = require("../models/User");
+
+const { createNotification } = require("../services/notificationService");
+
+const NOTIFICATION_TYPES = require("../constants/notificationTypes")
 
 exports.createTask =
     asyncHandler(async (req, res) => {
@@ -269,7 +276,7 @@ exports.deleteTask =
 exports.assignTask =
     asyncHandler(async (req, res) => {
 
-        const task = req.task;
+        // const task = req.task;
         const { email } = req.body
 
         const user = await User.findOne({ email });
@@ -293,18 +300,57 @@ exports.assignTask =
             )
         }
 
-        const previousAssignee = task.assignee;
+        const previousAssignee = req.task.assignee;
 
-        task.assignee = user._id;
-        await task.save();
+        req.task.assignee = user._id;
+        await req.task.save();
+
+
+        console.log("recipient:", user._id,
+
+            "organization:", req.task.organization,
+
+            "type:", NOTIFICATION_TYPES.TASK_ASSIGNED,
+
+            "actor:", req.user._id,
+
+            "entityType: ", "Task",
+
+            "entityId: ", req.task._id,
+
+            "metadata: ", "{",
+            "taskTitle: ", req.task.title,
+            "projectId: ", req.task.project,
+            "}"
+        );
+
+
+        await createNotification({
+            recipient: user._id,
+
+            organization: req.task.organization,
+
+            type: NOTIFICATION_TYPES.TASK_ASSIGNED,
+
+            actor: req.user._id,
+
+            entityType: "Task",
+
+            entityId: req.task._id,
+
+            metadata: {
+                taskTitle: req.task.title,
+                projectId: req.task.project,
+            },
+        });
 
         await createActivity.logTaskAssigned(
-            task,
+            req.task,
             req.user._id,
             {
                 previousAssignee: previousAssignee || null,
                 newAssignee: {
-                    userId: task.assignee,
+                    userId: req.task.assignee,
                     userName: user.name,
                 }
 
@@ -314,7 +360,7 @@ exports.assignTask =
         res.status(200).json({
             success: true,
             message: "User assign successfully",
-            task,
+            task: req.task,
         });
 
     })

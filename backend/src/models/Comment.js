@@ -35,6 +35,13 @@ const commentSchema = new mongoose.Schema({
         trim: true
     },
 
+    mentions: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }
+    ],
+
     edited: {
         type: Boolean,
         default: false
