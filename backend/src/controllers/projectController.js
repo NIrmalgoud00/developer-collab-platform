@@ -7,6 +7,12 @@ const { baseGetActivities } = require("../services/baseGetActivities");
 const createActivity
   = require("../services/activityService");
 
+const { createNotification } = require("../services/notificationService");
+
+const NOTIFICATION_TYPES = require("../constants/notificationTypes");
+
+const Notification = require("../models/Notification")
+
 exports.createProject =
   asyncHandler(async (req, res) => {
     const { name, description } =
@@ -19,6 +25,32 @@ exports.createProject =
         description,
         createdBy: req.user._id,
       });
+
+    const members = req.organization.members;
+
+    // Create notification 
+    const notifications =
+      members
+        .filter(
+          (member) =>
+            !member.user.equals(req.user._id)
+        )
+        .map((member) => ({
+          recipient: member.user,
+          organization: req.organization._id,
+          type: NOTIFICATION_TYPES.PROJECT_CREATED,
+          actor: req.user._id,
+          entityType: "Project",
+          entityId: project._id,
+          metadata: {
+            projectName: project.name
+          }
+        }));
+
+    // Save in DB
+    await Notification.insertMany(
+      notifications
+    );
 
     await createActivity.logProjectCreated(
       project,
