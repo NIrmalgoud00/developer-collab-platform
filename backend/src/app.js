@@ -10,6 +10,7 @@ const taskRouter = require("./routes/taskRoutes");
 const commentRouter = require("./routes/commentRoutes");
 const attachmentRouter = require("./routes/attachmentRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
+const searchRouter = require("./routes/searchRoutes");
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(taskRouter);
 app.use(attachmentRouter);
 app.use(commentRouter);
 app.use("/api/notifications", notificationRouter);
+app.use("/api/organization", searchRouter);
 
 app.get("/api/health", (req, res) => {
     res.status(200).json({
