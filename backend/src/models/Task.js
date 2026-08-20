@@ -87,6 +87,11 @@ const taskSchema = new mongoose.Schema(
 );
 
 taskSchema.index({
+    title: "text",
+    description: "text",
+});
+
+taskSchema.index({
     project: 1,
     status: 1,
     position: 1

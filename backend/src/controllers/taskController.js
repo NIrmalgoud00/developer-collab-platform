@@ -118,6 +118,24 @@ exports.getTasks =
             filter.priority = req.query.priority;
         }
 
+        // in filter give me btn when developer fatch otherwise user list
+        if (req.query.assignee && req.query.assignee !== "") {
+            filter.assignee = req.query.assignee;
+        }
+
+        if (req.query.labels && req.query.labels !== "") {
+            filter.labels = req.query.labels;
+        }
+
+        if (req.query.dueDate && req.query.dueDate !== "") {
+            filter.dueDate = req.query.dueDate;
+        }
+
+        // in filter give project list not use because tasks get by projectId
+        // if (req.query.project && req.query.project !== "") {
+        //     filter.project = req.query.project;
+        // }
+
         const tasks =
             await Task.find(filter)
                 .populate(
