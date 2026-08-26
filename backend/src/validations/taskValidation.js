@@ -10,13 +10,19 @@ const createTaskValidation = [
         .isLength({ min: 3 })
         .withMessage("Minimum 3 characters"),
 
+    body("description")
+        .notEmpty()
+        .withMessage("Description is required")
+        .isLength({ min: 10 })
+        .withMessage("Minimum 10 characters"),
+
     body("status")
         .optional()
         .isIn([
             "todo",
             "in_progress",
             "review",
-            "done"
+            "completed"
         ]),
 
     body("priority")
@@ -25,7 +31,6 @@ const createTaskValidation = [
             "low",
             "medium",
             "high",
-            "critical"
         ])
 
 ];
@@ -47,12 +52,12 @@ const updateTaskValidation = [
 
     body("status")
         .optional()
-        .isIn(["todo", "in_progress", "review", "done"])
+        .isIn(["todo", "in_progress", "review", "completed"])
         .withMessage("Invalid status"),
 
     body("priority")
         .optional()
-        .isIn(["low", "medium", "high", "critical"])
+        .isIn(["low", "medium", "high"])
         .withMessage("Invalid priority"),
 
     body("dueDate")
@@ -91,7 +96,7 @@ const moveTaskValidation = [
             "todo",
             "in_progress",
             "review",
-            "done"
+            "completed"
         ]),
 
     body("position")

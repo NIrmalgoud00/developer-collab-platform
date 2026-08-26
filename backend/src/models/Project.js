@@ -46,8 +46,15 @@ const projectSchema = new mongoose.Schema(
 );
 
 // Additional indexes
-projectSchema.index({ organization: 1, createdAt: -1 });
-projectSchema.index({ organization: 1, status: 1 });
+projectSchema.index({
+    organization: 1,
+    createdAt: -1
+});
+
+projectSchema.index({
+    organization: 1,
+    status: 1
+});
 
 module.exports = mongoose.model(
     "Project",

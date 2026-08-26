@@ -33,7 +33,7 @@ const taskSchema = new mongoose.Schema(
                 "todo",
                 "in_progress",
                 "review",
-                "done"
+                "completed"
             ],
             default: "todo"
         },
@@ -44,7 +44,6 @@ const taskSchema = new mongoose.Schema(
                 "low",
                 "medium",
                 "high",
-                "critical"
             ],
             default: "medium"
         },
@@ -73,6 +72,11 @@ const taskSchema = new mongoose.Schema(
         position: {
             type: Number,
             default: 0
+        },
+
+        completedAt: {
+            type: Date,
+            default: null,
         },
 
         archived: {
@@ -104,6 +108,32 @@ taskSchema.index({
 
 taskSchema.index({
     dueDate: 1
+});
+
+// Add new indexes
+taskSchema.index({
+    organization: 1,
+    status: 1
+});
+
+taskSchema.index({
+    organization: 1,
+    priority: 1
+});
+
+taskSchema.index({
+    organization: 1,
+    assignee: 1
+});
+
+taskSchema.index({
+    organization: 1,
+    dueDate: 1
+});
+
+taskSchema.index({
+    organization: 1,
+    completedAt: 1
 });
 
 module.exports = mongoose.model(

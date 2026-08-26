@@ -206,12 +206,43 @@ exports.updateTask =
             const oldValue = task[key];
             const newValue = req.body[key];
 
-            const isChanged =
-                oldValue instanceof mongoose.Types.ObjectId
-                    ? !oldValue.equals(newValue)
-                    : oldValue !== newValue;
+            if (key === "labels") {
+                const oldSet = new Set(
+                    oldValue.map((label) => label.trim().toLowerCase())
+                );
 
-            if (isChanged) {
+                const newSet = new Set(
+                    newValue.map((label) => label.trim().toLowerCase())
+                );
+
+                const added = [];
+                const removed = [];
+
+                // Find added labels
+                for (const label of newSet) {
+                    if (!oldSet.has(label)) {
+                        added.push(label);
+                    }
+                }
+
+                // Find removed labels
+                for (const label of oldSet) {
+                    if (!newSet.has(label)) {
+                        removed.push(label);
+                    }
+                }
+
+                if (
+                    added.length !== 0 || removed !== 0
+                ) {
+                    metadata[key] = {
+                        added,
+                        removed,
+                    };
+                }
+            }
+
+            else if (oldValue !== newValue) {
                 metadata[key] = {
                     oldValue: task[key],
                     newValue: req.body[key]
@@ -388,21 +419,42 @@ exports.moveTask =
 
         const { status, position } = req.body;
 
+        let metadata = {};
+
         const task = req.task;
 
-        const metadata = {
-            status: {
+        if (task.status != status) {
+            if (
+                task.status !== "completed" &&
+                status === "completed"
+            ) {
+                task.completedAt = new Date();
+                metadata.complete = new Date();
+            }
+
+            metadata.status = {
                 oldValue: task.status,
                 newvalue: status
-            },
-            position: {
+            }
+
+            if (
+                task.status === "completed" &&
+                status !== "completed"
+            ) {
+                task.completedAt = null;
+            }
+
+            task.status = status;
+        }
+
+        if (task.position != position) {
+            metadata.position = {
                 oldValue: task.position,
                 newvalue: position
             }
+            task.position = position;
         }
 
-        task.status = status;
-        task.position = position;
         await task.save();
 
         await createActivity.logTaskMoved(

@@ -11,9 +11,19 @@ const asyncHandler = require("../utils/asyncHandler");
 const loadOrganization = asyncHandler(
     async (req, res, next) => {
 
+        let organizationId;
+
+        if (req.params.organizationId && req.params.organizationId !== "") {
+            organizationId = req.params.organizationId;
+        }
+
+        if (req.query.organizationId && req.query.organizationId !== "") {
+            organizationId = req.query.organizationId;
+        }
+
         const organization =
             await getOrganizationById(
-                req.params.organizationId
+                organizationId
             );
 
         req.organization = organization;

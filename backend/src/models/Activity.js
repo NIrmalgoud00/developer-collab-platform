@@ -61,6 +61,12 @@ activitySchema.index({
     createdAt: -1
 });
 
+activitySchema.index({
+    organization: 1,
+    performedBy: 1,
+    createdAt: -1
+});
+
 module.exports =
     mongoose.model(
         "Activity",
