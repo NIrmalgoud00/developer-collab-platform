@@ -2,6 +2,45 @@ const Project = require("../models/Project");
 const Task = require("../models/Task");
 const Activity = require("../models/Activity");
 
+const ApiError = require("../utils/ApiError");
+
+const getDateRange = (range) => {
+    const endDate = new Date();
+
+    const startDate = new Date(endDate);
+
+    switch (range) {
+        case "7d":
+            startDate.setDate(
+                startDate.getDate() - 7
+            );
+            break;
+
+        case "30d":
+            startDate.setDate(
+                startDate.getDate() - 30
+            );
+            break;
+
+        case "90d":
+            startDate.setDate(
+                startDate.getDate() - 90
+            );
+            break;
+
+        default:
+            throw new ApiError(
+                400,
+                "Invalid date range. Use 7d, 30d, or 90d"
+            );
+    }
+
+    return {
+        startDate,
+        endDate,
+    };
+};
+
 const getProjectStats = async (organizationId) => {
 
     const result = await Project.aggregate([
@@ -46,7 +85,11 @@ const getProjectStats = async (organizationId) => {
     );
 };
 
-const getTaskStats = async (organizationId) => {
+const getTaskStats = async (
+    organizationId,
+    startDate,
+    endDate
+) => {
 
     const now = new Date();
 
@@ -70,14 +113,37 @@ const getTaskStats = async (organizationId) => {
                     $sum: {
                         $cond: [
                             {
-                                $eq: [
-                                    "$status",
-                                    "completed",
+                                $and: [
+                                    {
+                                        $eq: [
+                                            "$status",
+                                            "completed",
+                                        ],
+                                    },
+                                    {
+                                        $ne: [
+                                            "$completedAt",
+                                            null,
+                                        ],
+                                    },
+                                    {
+                                        $gte: [
+                                            "$completedAt",
+                                            startDate,
+                                        ],
+                                    },
+                                    {
+                                        $lte: [
+                                            "$completedAt",
+                                            endDate,
+                                        ],
+                                    }
                                 ],
                             },
+
                             1,
                             0,
-                        ],
+                        ]
                     },
                 },
 
@@ -293,7 +359,9 @@ const getTasksByAssignee = async (
 
 // Average time to complete task
 const getAverageCompletionTime = async (
-    organizationId
+    organizationId,
+    startDate,
+    endDate
 ) => {
 
     const result = await Task.aggregate([
@@ -306,7 +374,8 @@ const getAverageCompletionTime = async (
                 status: "completed",
 
                 completedAt: {
-                    $ne: null,
+                    $gte: startDate,
+                    $lte: endDate,
                 },
             },
         },
@@ -411,96 +480,109 @@ const getTasksCompletedThisWeek =
         );
     };
 
-const getMostActiveDevelopers =
-    async (organizationId) => {
+const getMostActiveDevelopers = async (
+    organizationId,
+    startDate,
+    endDate
+) => {
 
-        const startOfWeek =
-            getStartOfWeek();
+    return await Activity.aggregate([
+        {
+            $match: {
+                organization:
+                    organizationId,
 
-        return await Activity.aggregate([
-            {
-                $match: {
-                    organization:
-                        organizationId,
-
-                    createdAt: {
-                        $gte: startOfWeek,
-                    },
+                createdAt: {
+                    $gte: startDate,
+                    $lte: endDate,
                 },
             },
+        },
 
-            {
-                $group: {
-                    _id: "$performedBy",
+        {
+            $group: {
+                _id: "$performedBy",
 
-                    activityCount: {
-                        $sum: 1,
-                    },
+                activityCount: {
+                    $sum: 1,
                 },
             },
+        },
 
-            {
-                $sort: {
-                    activityCount: -1,
-                },
+        {
+            $sort: {
+                activityCount: -1,
             },
+        },
 
-            {
-                $limit: 25,
+        {
+            $limit: 10,
+        },
+
+        {
+            $lookup: {
+                from: "users",
+
+                localField: "_id",
+
+                foreignField: "_id",
+
+                as: "user",
             },
+        },
 
-            {
-                $lookup: {
-                    from: "users",
+        {
+            $unwind: "$user",
+        },
 
-                    localField: "_id",
+        {
+            $project: {
+                _id: 0,
 
-                    foreignField: "_id",
+                userId: "$user._id",
 
-                    as: "user",
-                },
+                name: "$user.name",
+
+                email: "$user.email",
+
+                activityCount: 1,
             },
+        },
+    ]);
+};
 
-            {
-                $unwind: "$user",
-            },
+const getRecentActivities = async (
+    organizationId,
+    startDate,
+    endDate
+) => {
 
-            {
-                $project: {
-                    _id: 0,
+    return Activity.find({
+        organization:
+            organizationId,
 
-                    userId: "$user._id",
-
-                    name: "$user.name",
-
-                    email: "$user.email",
-
-                    activityCount: 1,
-                },
-            },
-        ]);
-    };
-
-const getRecentActivities =
-    async (organizationId) => {
-
-        return Activity.find({
-            organization:
-                organizationId,
+        createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+        },
+    })
+        .populate("performedBy", "name email")
+        .populate("project", "name")
+        .populate("task", "title")
+        .sort({
+            createdAt: -1
         })
-            .populate("performedBy", "name email")
-            .populate("project", "name")
-            .populate("task", "title")
-            .sort({
-                createdAt: -1
-            })
-            .limit(25)
-            .lean();
-    };
+        .limit(10)
+        .lean();
+};
 
 const getDashboard = async ({
     organizationId,
+    range,
 }) => {
+
+    const { startDate, endDate } =
+        getDateRange(range);
 
     const [
         projectStats,
@@ -519,7 +601,9 @@ const getDashboard = async ({
         ),
 
         getTaskStats(
-            organizationId
+            organizationId,
+            startDate,
+            endDate
         ),
 
         getTasksByStatus(
@@ -535,7 +619,9 @@ const getDashboard = async ({
         ),
 
         getAverageCompletionTime(
-            organizationId
+            organizationId,
+            startDate,
+            endDate
         ),
 
         getTasksCompletedThisWeek(
@@ -543,15 +629,21 @@ const getDashboard = async ({
         ),
 
         getMostActiveDevelopers(
-            organizationId
+            organizationId,
+            startDate,
+            endDate
         ),
 
         getRecentActivities(
-            organizationId
+            organizationId,
+            startDate,
+            endDate
         ),
     ]);
 
     return {
+        range,
+
         overview: {
             totalProjects:
                 projectStats.totalProjects,
